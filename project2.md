@@ -1,24 +1,20 @@
 # Documentation for Project 2 (LEMP)
 
-## Install Apache and updating firewall:
+## INSTALLING THE NGINX WEB SERVER:
 
 `sudo apt update`
 
-`sudo apt install apache2`
+`sudo apt install nginx`
 
-`sudo systemctl status apache2`
+`sudo systemctl status nginx`
 
-![apache status](./images/apache-status.png)
-
-Updating Firewall 
-
-![firewall](./images/inbound-rules.png)
+![nginx status](./images/status-nginx.png)
 
 Default Page
 
-![default page](./images/apache-default-page.png)
+![welcome page](./images/welcometonginx.png)
 
-## Installing MYSQL:
+## INSTALLING MYSQL:
 
 `sudo apt install mysql-server`
 
@@ -32,67 +28,133 @@ Default Page
 
 ![mysql password](./images/sql-password.png)
 
-## Installing PHP
+## INSTALLING PHP
 
-`sudo apt install php libapache2-mod-php php-mysql`
+`sudo apt install php-fpm php-mysql`
 
 `php -v`
 
 ![php version](./images/php-version.png)
 
-## Creating a virtual host
+## CONFIGURING NGINX TO USE PHP PROCESSOR
 
-`sudo mkdir /var/www/projectlamp`
+`sudo mkdir /var/www/projectLEMP`
 
-`sudo chown -R $USER:$USER /var/www/projectlamp`
+`sudo chown -R $USER:$USER /var/www/projectlemp`
 
-`sudo vi /etc/apache2/sites-available/projectlamp.conf`
+`sudo nano /etc/nginx/sites-available/projectLEMP`
 
 Config file:
 
-`<VirtualHost *:80>
-    ServerName projectlamp
-    ServerAlias www.projectlamp 
-    ServerAdmin webmaster@localhost
-    DocumentRoot /var/www/projectlamp
-    ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>`
+<!-- #/etc/nginx/sites-available/projectLEMP
 
-`sudo ls /etc/apache2/sites-available`
+server {
+    listen 80;
+    server_name projectLEMP www.projectLEMP;
+    root /var/www/projectLEMP;
 
-![sites dir](./images/config-file.png)
+    index index.html index.htm index.php;
 
-`sudo a2ensite projectlamp`
+    location / {
+        try_files $uri $uri/ =404;
+    }
 
-`sudo a2dissite 000-default`
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+     }
 
-`sudo apache2ctl configtest`
+    location ~ /\.ht {
+        deny all;
+    }
 
-`sudo systemctl reload apache2`
+} -->
 
-`sudo echo 'Hello LAMP from hostname' $(curl -s http://169.254.169.254/latest/meta-data/public-hostname) 'with public IP' $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4) > /var/www/projectlamp/index.html`
+`sudo ln -s /etc/nginx/sites-available/projectLEMP /etc/nginx/sites-enabled/`
 
-![index page](./images/index-page.png)
+`sudo nginx -t`
 
-## Enable PHP on website
+![conf no error](./images/conf-no-error.png)
 
-`sudo vim /etc/apache2/mods-enabled/dir.conf`
+`sudo unlink /etc/nginx/sites-enabled/default`
 
-`<IfModule mod_dir.c>
-        DirectoryIndex index.php index.html index.cgi index.pl index.xhtml index.htm
-</IfModule>`
+`sudo systemctl reload nginx`
 
-`sudo systemctl reload apache2`
+`sudo echo 'Hello LEMP from hostname' $(curl -s http://169.254.169.254/latest/meta-data/public-hostname) 'with public IP' $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4) > /var/www/projectLEMP/index.html`
 
-`vim /var/www/projectlamp/index.php`
+![echo](./images/echo.png)
+
+## TESTING PHP WITH NGINX
+
+`sudo nano /var/www/projectLEMP/info.php`
 
 `<?php
 phpinfo();`
 
-![index.php](./images/index-php.png)
+![testing php](./images/testing-php.png)
 
 `sudo rm /var/www/projectlamp/index.php`
+
+## RETRIEVING DATA FROM MYSQL DATABASE WITH PHP
+
+`mysql> CREATE DATABASE `example_database`;`
+
+`mysql>  CREATE USER 'example_user'@'%' IDENTIFIED WITH mysql_native_password BY 'password';` 
+
+<!-- I used a differnt password  -->
+
+`mysql> GRANT ALL ON example_database.* TO 'example_user'@'%';`
+
+Exit
+
+`mysql -u example_user -p`
+
+`mysql> SHOW DATABASES;`
+
+![Show Databases](./images/example-database.png)
+
+<!-- CREATE TABLE example_database.todo_list (
+		item_id INT AUTO_INCREMENT,
+		content VARCHAR(255),
+		PRIMARY KEY(item_id)
+			); -->
+
+`mysql> INSERT INTO example_database.todo_list (content) VALUES ("My first important item");`
+
+`mysql>  SELECT * FROM example_database.todo_list;`
+
+![Todo list](./images/todolist.png)
+
+Exit
+
+`nano /var/www/projectLEMP/todo_list.php`
+
+Copy and make sure password matches:
+
+<!-- <?php
+$user = "example_user";
+$password = "password";
+$database = "example_database";
+$table = "todo_list";
+
+try {
+  $db = new PDO("mysql:host=localhost;dbname=$database", $user, $password);
+  echo "<h2>TODO</h2><ol>";
+  foreach($db->query("SELECT content FROM $table") as $row) {
+    echo "<li>" . $row['content'] . "</li>";
+  }
+  echo "</ol>";
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "<br/>";
+    die();
+} -->
+
+`http://54.145.169.178/todo_list.php`
+
+![Todo list php](./images/todolist-php.png)
+
+Nice!
+
 
 
 
